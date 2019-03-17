@@ -174,6 +174,19 @@ patch.HR <- round(q2.cox.sum$coefficients[1,2], 2)
 age.HR <- round(q2.cox.sum$coefficients[2,2], 2)
 
 q2.cox.sum
+
+#or is this just asking for surdiff on the two stratum?
+q2.data.under50 <- filter(q2.data, ageReg == "Under50")
+q2.data.under50
+q2.under50.obj <- Surv(q2.data.under50$ttr, q2.data.under50$relapse)
+survdiff(q2.under50.obj ~ q2.data.under50$grp)
+
+q2.data.50ao <- filter(q2.data, ageReg == "50andOver")
+q2.data.50ao
+q2.50ao.obj <- Surv(q2.data.50ao$ttr, q2.data.50ao$relapse)
+survdiff(q2.50ao.obj ~ q2.data.50ao$grp)
+
+
 ```
 
 <div id="body">
@@ -186,6 +199,8 @@ b)Yes, there is a difference. Using a null hypothesis of expected being no diffe
 c)There are `r q2.u50` people aged 49 and under and `r q2.50ao` people aged 50 and over. They are split pretty evenly between the treatment groups. 
 
 d)If treating age as a continuous variable, the age difference between the groups dosn't seem to have a big impact on the treatmnt effect (95% CI of age HR is 0.959, 0.996). 
+
+If treating age as dichotomous variable and diong the survdiff on each stratum, then age is a confounder? How do I know this is not EMM? Or does that matter in this case? ie: an EMM is confounding when it is not a part of the research question. 
    
 </div>
 
@@ -201,10 +216,54 @@ d) If employment is included in the model, should age also be included? (2 point
 
 ```{r}
 # insert R code here
+
+#create the 3 models
+q3.cox <- coxph(q2.surv.object ~ q2.data$grp)
+summary(q3.cox)
+
+q3.cox.a <- coxph(q2.surv.object ~ q2.data$grp + q2.data$age)
+summary(q3.cox.a)
+
+q3.cox.a.e <- coxph(q2.surv.object ~ q2.data$grp + q2.data$age + q2.data$employment)
+summary(q3.cox.a.e)
+
+#b) Report and interpret the log likleihoods for the 3 models (3 points)    
+str(q2.data)
+
+#c) Does the addition of age statistically improve the null model? Report the p-value and interpret what it means. (2 points)   
+q3.model.anova <- anova(q3.cox, q3.cox.a)
+q3.model.anova$`P(>|Chi|)`
+
+#d) If employment is included in the model, should age also be included? (2 points).  Hint; the `logLik` function may be useful.
+q3.cox.e <- coxph(q2.surv.object ~ q2.data$grp + q2.data$employment)
+q3.cox.e
+
+#number of parameters is all the coeffecients, in this case, intercept, group, and 2 additional works (3 work categories). So 1 + 1 + 2 = 4
+AIC.e <- 2*4 - 2 *logLik(q3.cox.e)
+AIC.e
+
+#added age as a parameter, so 4 + 1 = 5
+AIC.a.e <- 2*5 - 2 * logLik(q3.cox.a.e)
+AIC.a.e
+
+# AIC.a.e is smaller than AIC.e, so it is better. 
+
+
 ```
 
 <div id="body">
 **Type your answer here:** 
+
+a)Created them
+
+b)Model 1: The likelihood of relapse using patch-only is 1.83 times higher (95% CI of 1.20, 2.80) than when using the triple-therapy combination. 
+
+Model 2: After adjusting for age, the likelihood of relapse using patch-only is 1.75 times higher (95% CI of 1.14, 2.67) than when using the triple-therapy combination. After adjusting for treatment type, the likelihood of relapse is 0.02 lower (95% CI 0.00, 0.04) for every year increase in a person's age. 
+
+Model 3: After adjusting for age and employment, the likelihood of relapse using patch-only is 1.84 times higher (95% CI of 1.20, 2.82) than when using the triple-therapy combination. After adjusting for treatment type and emloyment, the likelihood of relapse is 0.03 lower (95% CI 0.01, 0.05) for every year increase in a person's age. After adjusting for age and treatment type, the likelihood of relapse for "other" employment is 2.02 times higher (95% CI of 1.20, 3.43) than full-time employment and the likelihood of relapse for part-time employment is 1.92 times higher (95% CI of 1.01, 3.65) than full-time employment.
+
+c)The anova comparing the models gives a p value of 0.016. This means that there is a significant difference between the models. 
+d)Age should be included in the model. The AIC for the group + employment + age model is smaller than for the group + employment model. 
 
 </div>
 
