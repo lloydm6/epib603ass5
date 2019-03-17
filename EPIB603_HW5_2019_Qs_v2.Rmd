@@ -1,0 +1,306 @@
+---
+title: "lab 5 2019 Q"
+subtitle: "Survival analysis "
+author: "Iris Ganser and Marshall Lloyd"
+date: "Winter 2019"
+output:
+  html_document:
+    css: lab.css
+    highlight: tango
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+<div id="instructions">
+Complete this exercise, and submit answers using R Markdown in RStudio. Open the document using RStudio, then **save as XXXXXXXXX.Rmd where XXXXXXXXX is your McGill student ID. Then when you knit the file it will create a html file called XXXXXXXXX.html**. You can then zip this file and submit it. Alternatively you can knit the file into a Word or PDF document and submit those. The zip file approach is best for maintianing all the formating. Unfortuantely, as discussed in the announcements MyCourses won't accept a html file without altering its formating. Enter your answers in the appropriate R code chunks or text answers in the box following the **Type your answer here:**.   
+
+Grading is based on the points allocated for each question and an extra 5 points for overall style, organization, and clarity. Marks per question are indicated in each question. 
+
+</div>
+
+## Questions 1 - 14 points
+We will use several datasets from the `asaur` library; load the `pancreatic` dataset from the `asaur` library. The command `help("pancreatic")` will explain what the variables are. For survival analysis obviously we need to load the `survival` package. To easily manipulate dates for the right format for survival analysis, the `lubridate` package is helpful.
+
+<div id="exercise">
+**Exercise**:     
+a) How many observations and variables are in this dataset? (2 points)      
+b) We are interested in the progression free survival (PFS) time. In some cases PFS is not available and can be approximated by overall survival (OS) time. What is the median PFS? What is the median OS? (6 points) 
+c) Next, plot the survival curves according to the stage of the disease and report if there is evidence for a difference between these groups. Plot time axis in months. (4 points)          
+d) Report the p-value to 3 decimal places. How do you interpret this? (2 points)
+</div>
+
+```{r}
+# insert R code here
+
+
+#install.packages("asaur")
+#install.packages("lubridate")
+library(asaur)
+library(lubridate)
+library(survival)
+
+help("pancreatic")
+
+q1.data <- pancreatic
+
+#a) How many observations and variables are in this dataset? (2 points)   
+head(pancreatic)
+str(pancreatic)
+str(q1.data)
+
+#b) We are interested in the progression free survival (PFS) time. In some cases PFS is not available and can be approximated by overall survival (OS) time. What is the median PFS? What is the median OS? (6 points) 
+
+q1.data$onstudy <- as_date(mdy(q1.data$onstudy))
+q1.data$progression <- as_date(mdy(q1.data$progression))
+q1.data$death <- as_date(mdy(q1.data$death))
+
+str(q1.data)
+
+q1.data$PFS <- q1.data$progression - q1.data$onstudy
+q1.data$OS <- q1.data$death - q1.data$onstudy
+
+median.PFS <- median(q1.data$PFS, na.rm = TRUE)
+median.OS <- median(q1.data$OS)
+
+#c) Next, plot the survival curves according to the stage of the disease and report if there is evidence for a difference between these groups. Plot time axis in months. (4 points)          
+head(q1.data)
+
+q1.data$SurvMo <- time_length(interval(q1.data$onstudy, q1.data$death), unit = "month")
+q1.data
+q1.surv.object <- Surv(q1.data$SurvMo)
+
+plot(survfit(q1.surv.object ~ q1.data$stage), col = c("blue", "red"), xlab = "Survival Time (months)")
+legend(x = "topright", inset = c(0.05, 0.05), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
+
+q1.curvetest <- survdiff(q1.surv.object ~ q1.data$stage)
+q1.curvetest$chisq
+
+
+#d) Report the p-value to 3 decimal places. How do you interpret this? (2 points)
+q1.pval <- format(round(pchisq(q1.curvetest$chisq, 1, lower.tail = FALSE), 3), nsmall = 3)
+
+
+```
+
+
+<div id="body">
+**Type your answer here:** 
+
+a)There are 41 observations of 4 variables. 
+
+b)The median PFS is `r median.PFS` days and the median OS is `r median.OS` days.
+
+c)There isn't evidence to support the hypothesis that there is a difference between the two groups. 
+
+d)The p value is `r q1.pval`. If the curves were the same, the probability of getting the observed data is `r q1.pval`.
+
+</div>
+
+## Question 2 - 14 points
+
+Of course, it is possible that confounders exist between different groups, especially in non-randomized datasets. Confounding may be controlled for as regression terms in the hazards model, but for a limited number of categories this may be investigated via stratification. Consider the `pharmacoSmoking` dataset in the `asaur` library. Remember the command `help("pharmacoSmoking")` will explain what the variables are.
+<div id="exercise">
+**Exercise**:     
+a) How many observations and variables are in the dsataset? (2 points)
+b) Is there a difference in time to relapse (TTR) according to the treatment received? (3 points)    
+c) Next, stratify age by those 49 and younger and those 50 and older. How many patients are aged 50 and over? (3 points)
+d) Repeat step b), but now include age as a potential confounder. Discuss if the age differences between the groups explain some or all of any observed treatment differences. (2 points)
+</div>
+
+```{r}
+# insert R code here
+
+q2.data <- pharmacoSmoking
+
+head(pharmacoSmoking)
+
+
+#a) How many observations and variables are in the dsataset? (2 points)
+str(pharmacoSmoking)
+
+#b) Is there a difference in time to relapse (TTR) according to the treatment received? (3 points)    
+help("pharmacoSmoking")
+
+q2.surv.object <- Surv(q2.data$ttr)
+
+
+plot(survfit(q2.surv.object ~ q2.data$grp), col = c("blue", "red"), xlab = "Time to Relapse (months)")
+legend(x = "topright", inset = c(0.05, 0.05), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
+
+q1.curvetest <- survdiff(q1.surv.object ~ q1.data$stage)
+q1.curvetest$chisq
+
+
+#c) Next, stratify age by those 49 and younger and those 50 and older. How many patients are aged 50 and over? (3 points)
+
+
+#d) Repeat step b), but now include age as a potential confounder. Discuss if the age differences between the groups explain some or all of any observed treatment differences. (2 points)
+
+
+```
+
+<div id="body">
+**Type your answer here:** 
+
+a)There are 125 observations of 14 variables. 
+
+b)
+   
+</div>
+
+## Questions 3 - 10 points
+Model selection can be a tricky subject. Let us begin with the simple situation of nested models. Using the `pharmacoSmoking` dataset, you will examine several nested Cox PH models. 
+<div id="exercise">
+**Exercise**: 
+a) Create 3 Cox PH models with (1) no covariates, (2) age, and (3) age + employment (3 points)        
+b) Report and interpret the log likleihoods for the 3 models (3 points)          
+c) Does the addition of age statistically improve the null model? Report the p-value and interpret what it means. (2 points)     
+d) If employment is included in the model, should age also be included? (2 points).  Hint; the `logLik` function may be useful.
+</div>
+
+```{r}
+# insert R code here
+```
+
+<div id="body">
+**Type your answer here:** 
+
+</div>
+
+## Questions 4 - 10 points
+Suppose we now want to compare *non-nested* models. For example, the following models (1) age, (2) employment, (3) age + employment. While model 1 and 2 are each nested in model 3 and can be compared as above (i.e. models 1 vs 3, and models 2 vs 3), we can't use this technique to compare models 1 and 2. 
+<div id="exercise">
+**Exercise**:      
+a) Calculate the AIC criteria ($\textit{AIC} = -2 * \ell(\widehat{\beta}) + 2 * k$) for each model (5 points)   
+b) Discuss what the AIC criteria is, and its interpration in choosing the best of these 3 models (i.e. which model is best by AIC criteria and why?) (5 points)
+</div>
+
+```{r}
+# insert R code here
+```
+
+<div id="body">
+**Type your answer here:** 
+
+</div>
+
+## Questions 5 - 10 points
+Comparing models can be quite complex in the presence of multiple variables and the AIC is often automatically calculated using a stepwise procedure (use `R` function `step`)
+<div id="exercise">
+**Exercise**: .     
+a) Start with the complete model of predictors, without interaction terms, in the `pharmacoSmoking` data set and then use `step` to arrive at the most parsimonious model. What are the variables in the final model? Use `?step` for syntax. (5 points)    
+b) What are the odds ratios for the age variable categories, based on the final model you selected. (5 points)
+</div>
+
+```{r}
+# insert R code here
+```
+
+
+<div id="body">
+**Type your answer here:** 
+</div>
+
+## Question 6 - 5 points
+In the previous exercise, we see that the effect of age group appears variable. The natural question is whether this is a linear or non-linear relationship. In cases of non-linear relationships, one can use splines to model data. Splines are flexible "piecewise polynomials", meaning that they are distinct curves that attach smoothly (as opposed to disjointedly) at specific points called "knots".
+
+The following code will fit a smoothing spline to this data and graph the results; 
+
+`modelS4.coxph <- coxph(Surv(ttr, relapse) ~ grp + employment + pspline(age, df=4) )`     
+`termplot(modelS4.coxph, se=T, terms=3, ylabs="Log hazard")` 
+
+<div id="exercise">
+**Exercise**:     
+Based on this information, can we establish that the relationship has departed from linearity? Consider curve shape and confidence intervals, and anything else you find relevant. (5 points)
+</div>
+
+```{r}
+# insert R code here
+```
+
+<div id="body">
+**Type your answer here:** 
+
+</div>
+
+## Question 7 - 5 points
+Model goodness-of-fit can also be assessed in survival analysis, in an analogous manner to linear regression, i.e. by examining residuals. You will need to use `residuals` a generic function to extract model residuals that may be applied to survival objects. Details can be found by `?residual.coxph`. You will need to download the function `smoothSEcurve` from MyCourses and then source this into your file in order to plot the confidence intervals.
+
+<div id="exercise">
+**Exercise**:  Produce a separate residual plot for each covariate, then interpret each plot with respect to model goodness-of-fit (5 points).
+</div>
+
+```{r}
+# insert R code here
+```
+
+
+<div id="body">
+**Type your answer here:** 
+
+</div>
+
+## Question 8 - 10 points
+Occasionally you want to be sure that individual measurements are not unduly influencing the model (for example if data was incorrectly entered). One approach to this is the deletion of individual values and assessing the impact on the model coefficients. This can be done by adding `type=dfbeta` to the `residuals` function. More information can be found by typing `?dfbeta`. 
+
+<div id="exercise">
+**Exercise**:     
+a) Plot the age coefficient for each data as a function of the deleted observation. Use the covariates from the final model you selected in question 5 (5 points)         
+b) Discuss whether this graph suggests that any values are exerting an undue influence on the model. Hint: consider the magnitude of the coefficient change  (5 points)  
+</div>
+
+```{r}
+# insert R code here
+```
+
+<div id="body">
+**Type your answer here:** 
+
+</div>
+
+## Question 9 - 9 points
+Proportional hazards is a key assumption of the Cox model and this can be checked, in a somewhat crude manner, by a log-log plot. Use the `pancreatic2` data, a slightly modified from `pancreatic` data set in Question 1 from the `asaur` package.
+
+<div id="exercise">
+**Exercise**:     
+a) Model PFS survival separately as a function of `stage`. Plot time axis in months. (3 points)    
+b) Plot the complementary log-log survival against log time for each individual cancer stage. Please provide a legend to indicate which curve is which stage. (3 points).      
+c) Interpret the graph as to whether you think the proportional hazards assumption is valid (3 points).
+</div>
+
+```{r}
+# insert R code here
+```
+
+
+<div id="body">
+**Type your answer here:** 
+
+</div>
+
+## Question 10  - 6 points
+Schoenfeld residuals provide another useful way to evaluate the proportional hazards assumption. In `R` these residuals may be calculated by applying the `cox.zph` function to the `R` survival object. 
+
+<div id="exercise">
+**Exercise**:      
+a) Plot these residaul for the pancreatic model from Question 9 (3 points)
+b) What is the associated p-value and what is your interpretation of the proportional hazards assumption using this technique? (3 points)
+</div>
+
+```{r}
+# insert R code here
+```
+
+
+<div id="body">
+**Type your answer here:** \
+
+</div>
