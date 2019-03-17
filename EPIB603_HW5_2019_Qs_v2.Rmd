@@ -74,9 +74,10 @@ median.OS <- median(q1.data$OS)
 head(q1.data)
 
 q1.data$SurvMo <- time_length(interval(q1.data$onstudy, q1.data$death), unit = "month")
-q1.data
+
 q1.surv.object <- Surv(q1.data$SurvMo)
 
+#note that survfit() col is assigned in the order of the factors, ie: LA is 1, so that one is blue
 plot(survfit(q1.surv.object ~ q1.data$stage), col = c("blue", "red"), xlab = "Survival Time (months)")
 legend(x = "topright", inset = c(0.05, 0.05), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
 
@@ -129,22 +130,50 @@ str(pharmacoSmoking)
 #b) Is there a difference in time to relapse (TTR) according to the treatment received? (3 points)    
 help("pharmacoSmoking")
 
-q2.surv.object <- Surv(q2.data$ttr)
+q2.surv.object <- Surv(q2.data$ttr, q2.data$relapse)
 
+#Combination is codded as 1 
+plot(survfit(q2.surv.object ~ q2.data$grp), col = c("blue", "red"), xlab = "Time to Relapse (Days)")
+legend(x = "topright", inset = c(0.05, 0.05), col = c("blue", "red"), lty = c(1, 1), legend = c("Combination", "Patch Only"))
 
-plot(survfit(q2.surv.object ~ q2.data$grp), col = c("blue", "red"), xlab = "Time to Relapse (months)")
-legend(x = "topright", inset = c(0.05, 0.05), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
+head(q2.data)
 
-q1.curvetest <- survdiff(q1.surv.object ~ q1.data$stage)
-q1.curvetest$chisq
+q2.curvetest <- survdiff(q2.surv.object ~ q2.data$grp)
+q2.curvetest
+q2.curvetest$chisq
 
 
 #c) Next, stratify age by those 49 and younger and those 50 and older. How many patients are aged 50 and over? (3 points)
+
+library(dplyr)
+
+str(q2.data)
+
+#per group?
+q2.u50 <- nrow(filter(q2.data, q2.data$age < 50))
+q2.50ao <- nrow(filter(q2.data, q2.data$age >= 50))
+
+nrow(q2.data)
+
+q2.data$ageReg <- as.factor(ifelse(q2.data$age < 50, "Under50", "50andOver"))
+
+table(q2.data$ageReg, q2.data$grp)
+
+head(q2.data)
 
 
 #d) Repeat step b), but now include age as a potential confounder. Discuss if the age differences between the groups explain some or all of any observed treatment differences. (2 points)
 
 
+#do we wat age as a dichotomous variable that we did in c? Or as a continuous varaible? Are continuous variables allowed?
+q2.cox <- coxph(q2.surv.object ~ q2.data$grp + q2.data$age)
+coxph(q2.surv.object ~ q2.data$grp)
+
+q2.cox.sum <- summary(q2.cox)
+patch.HR <- round(q2.cox.sum$coefficients[1,2], 2)
+age.HR <- round(q2.cox.sum$coefficients[2,2], 2)
+
+q2.cox.sum
 ```
 
 <div id="body">
@@ -152,7 +181,11 @@ q1.curvetest$chisq
 
 a)There are 125 observations of 14 variables. 
 
-b)
+b)Yes, there is a difference. Using a null hypothesis of expected being no difference, the chi squared test of expected vs observed gives a p value of 0.005.
+
+c)There are `r q2.u50` people aged 49 and under and `r q2.50ao` people aged 50 and over. They are split pretty evenly between the treatment groups. 
+
+d)If treating age as a continuous variable, the age difference between the groups dosn't seem to have a big impact on the treatmnt effect (95% CI of age HR is 0.959, 0.996). 
    
 </div>
 
