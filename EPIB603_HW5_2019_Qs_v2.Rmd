@@ -238,17 +238,23 @@ q3.model.anova$`P(>|Chi|)`
 q3.cox.e <- coxph(q2.surv.object ~ q2.data$grp + q2.data$employment)
 q3.cox.e
 
-#number of parameters is all the coeffecients, in this case, intercept, group, and 2 additional works (3 work categories). So 1 + 1 + 2 = 4
-AIC.e <- 2*4 - 2 *logLik(q3.cox.e)
+#number of parameters is all the coeffecients, in this case, intercept, group, and 2 additional works (3 work categories). So 1 + 1 + 2 = 4. Hold up! No intercept! So take 1 off of that shit. 1 + 2 = 3
+AIC.e <- 2*3 - 2 *logLik(q3.cox.e)
 AIC.e
 
-#added age as a parameter, so 4 + 1 = 5
-AIC.a.e <- 2*5 - 2 * logLik(q3.cox.a.e)
+#added age as a parameter, so 3 + 1 = 4
+AIC.a.e <- 2*4 - 2 * logLik(q3.cox.a.e)
 AIC.a.e
 
 # AIC.a.e is smaller than AIC.e, so it is better. 
 
+#if simply using the log lik of the +emp model as the threshold, then look at the +age model. 
+logLik(q3.cox.e)
+logLik(q3.cox.a)
 
+#the age model gives a loglik closer to zero, ie: smaller, which means that if we are happy with emp on it's own being added, then we are happy with age on it's own being added. Obviously if we have an emp model and add age, that extra parameter automatically lowers the loglik
+
+#Are we compating the emp model to an emp + age model? Or just an age model? 
 ```
 
 <div id="body">
@@ -265,6 +271,8 @@ Model 3: After adjusting for age and employment, the likelihood of relapse using
 c)The anova comparing the models gives a p value of 0.016. This means that there is a significant difference between the models. 
 d)Age should be included in the model. The AIC for the group + employment + age model is smaller than for the group + employment model. 
 
+Age should be included in the model. If we are happy with the log likelihood of the model with employment included, then we must also be happy with the model with age included. 
+
 </div>
 
 ## Questions 4 - 10 points
@@ -277,10 +285,38 @@ b) Discuss what the AIC criteria is, and its interpration in choosing the best o
 
 ```{r}
 # insert R code here
+
+
+#a) Calculate the AIC criteria ($\textit{AIC} = -2 * \ell(\widehat{\beta}) + 2 * k$) for each model (5 points)  
+
+#number of parameters is all the coeffecients, in this case, no intercept, group, and 2 additional works (3 work categories). So 1 + 2 = 3
+AIC.e <- 2*3 - 2 *logLik(q3.cox.e)
+AIC.e
+
+#no intercept, group, and age
+AIC.a <- 2*2 - 2 * logLik(q3.cox.a)
+AIC.a
+
+#added age as a parameter, so 3 + 1 = 4
+AIC.a.e <- 2*4 - 2 * logLik(q3.cox.a.e)
+AIC.a.e
+#confirm that it's the same. 
+AIC(q3.cox.a.e, k = 2)
+
+AIC.uni <- 2*1 - 2* logLik(q3.cox)
+AIC.uni
+
+#b) Discuss what the AIC criteria is, and its interpration in choosing the best of these 3 models (i.e. which model is best by AIC criteria and why?) (5 points)
+
+
+
 ```
 
 <div id="body">
 **Type your answer here:** 
+
+
+b) It is Akaikies Information Criterion that is meant to communicate the goodness of fit of a model. It has two important terms, one that is a measure of fit based on the sum squares of errors of prediction (SSE, aka residual sum of squares) and another that adds a penalty for each parameter added to the model. The penalty is meant to prevent over fitting. When comparing models, the model with the smallest AIC should be considered the best, though some argue that the AIC penalty for additional parameters is not strong enough and blindly chasing the lowest AIC will not prevent overfitting. In comparing the three models based on the AIC criteria, the model with treatment group, age, and employment has the lowest AIC and is the best according to the AIC 
 
 </div>
 
