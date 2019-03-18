@@ -330,6 +330,8 @@ b) What are the odds ratios for the age variable categories, based on the final 
 
 ```{r}
 # insert R code here
+
+
 ```
 
 
@@ -352,6 +354,12 @@ Based on this information, can we establish that the relationship has departed f
 
 ```{r}
 # insert R code here
+modelS4.coxph <- coxph(Surv(q2.data$ttr, q2.data$relapse) ~ q2.data$grp + q2.data$employment + pspline(q2.data$age, df=4) )
+modelS4.coxph
+
+#not working for me
+termplot(modelS4.coxph, se=T, terms=3, ylabs="Log hazard")
+
 ```
 
 <div id="body">
