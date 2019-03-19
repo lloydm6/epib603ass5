@@ -72,7 +72,7 @@ median.OS <- median(q1.data$OS)
 
 #c) Next, plot the survival curves according to the stage of the disease and report if there is evidence for a difference between these groups. Plot time axis in months. (4 points)          
 head(q1.data)
-
+q1.data
 q1.data$SurvMo <- time_length(interval(q1.data$onstudy, q1.data$death), unit = "month")
 
 q1.surv.object <- Surv(q1.data$SurvMo)
@@ -140,7 +140,7 @@ head(q2.data)
 
 q2.curvetest <- survdiff(q2.surv.object ~ q2.data$grp)
 q2.curvetest
-q2.curvetest$chisq
+q2.b.pval <- pchisq(q2.curvetest$chisq, df = 1, lower.tail = F)
 
 
 #c) Next, stratify age by those 49 and younger and those 50 and older. How many patients are aged 50 and over? (3 points)
@@ -159,32 +159,33 @@ q2.data$ageReg <- as.factor(ifelse(q2.data$age < 50, "Under50", "50andOver"))
 
 table(q2.data$ageReg, q2.data$grp)
 
-head(q2.data)
-
 
 #d) Repeat step b), but now include age as a potential confounder. Discuss if the age differences between the groups explain some or all of any observed treatment differences. (2 points)
+q2.d.curvetest <- survdiff(q2.surv.object ~ q2.data$grp + strata(q2.data$ageReg))
+q2.d.curvetest
 
+q2.d.pval <- pchisq(q2.d.curvetest$chisq, df = 1, lower.tail = F)
 
 #do we wat age as a dichotomous variable that we did in c? Or as a continuous varaible? Are continuous variables allowed?
-q2.cox <- coxph(q2.surv.object ~ q2.data$grp + q2.data$age)
-coxph(q2.surv.object ~ q2.data$grp)
+#q2.cox <- coxph(q2.surv.object ~ q2.data$grp + q2.data$age)
+#coxph(q2.surv.object ~ q2.data$grp)
 
-q2.cox.sum <- summary(q2.cox)
-patch.HR <- round(q2.cox.sum$coefficients[1,2], 2)
-age.HR <- round(q2.cox.sum$coefficients[2,2], 2)
+#q2.cox.sum <- summary(q2.cox)
+#patch.HR <- round(q2.cox.sum$coefficients[1,2], 2)
+#age.HR <- round(q2.cox.sum$coefficients[2,2], 2)
 
-q2.cox.sum
+#q2.cox.sum
 
 #or is this just asking for surdiff on the two stratum?
-q2.data.under50 <- filter(q2.data, ageReg == "Under50")
-q2.data.under50
-q2.under50.obj <- Surv(q2.data.under50$ttr, q2.data.under50$relapse)
-survdiff(q2.under50.obj ~ q2.data.under50$grp)
+#q2.data.under50 <- filter(q2.data, ageReg == "Under50")
+#q2.data.under50
+#q2.under50.obj <- Surv(q2.data.under50$ttr, q2.data.under50$relapse)
+#survdiff(q2.under50.obj ~ q2.data.under50$grp)
 
-q2.data.50ao <- filter(q2.data, ageReg == "50andOver")
-q2.data.50ao
-q2.50ao.obj <- Surv(q2.data.50ao$ttr, q2.data.50ao$relapse)
-survdiff(q2.50ao.obj ~ q2.data.50ao$grp)
+#q2.data.50ao <- filter(q2.data, ageReg == "50andOver")
+#q2.data.50ao
+#q2.50ao.obj <- Surv(q2.data.50ao$ttr, q2.data.50ao$relapse)
+#survdiff(q2.50ao.obj ~ q2.data.50ao$grp)
 
 
 ```
@@ -194,14 +195,12 @@ survdiff(q2.50ao.obj ~ q2.data.50ao$grp)
 
 a)There are 125 observations of 14 variables. 
 
-b)Yes, there is a difference. Using a null hypothesis of expected being no difference, the chi squared test of expected vs observed gives a p value of 0.005.
+b)Yes, there is a difference. Using a null hypothesis of expected being no difference, the chi squared test of expected vs observed gives a p value of `r q2.b.pval`.
 
 c)There are `r q2.u50` people aged 49 and under and `r q2.50ao` people aged 50 and over. They are split pretty evenly between the treatment groups. 
 
-d)If treating age as a continuous variable, the age difference between the groups dosn't seem to have a big impact on the treatmnt effect (95% CI of age HR is 0.959, 0.996). 
+d)When stratifying by age and using a null hypothesis of expected being no difference between the treatment groups, the chi squared test of expected vs observed gives a p value of `r q2.d.pval` compared to 2d) unstratified p value of `r q2.b.pval`. This is evidence that the age difference between groups does not explain much (if any) of the observed differences between the treatment groups.
 
-If treating age as dichotomous variable and diong the survdiff on each stratum, then age is a confounder? How do I know this is not EMM? Or does that matter in this case? ie: an EMM is confounding when it is not a part of the research question. 
-   
 </div>
 
 ## Questions 3 - 10 points
@@ -217,27 +216,42 @@ d) If employment is included in the model, should age also be included? (2 point
 ```{r}
 # insert R code here
 
-#create the 3 models
-q3.cox <- coxph(q2.surv.object ~ q2.data$grp)
+#create the 3 models.....take out groups
+q3.cox <- coxph(q2.surv.object ~ 1)
 summary(q3.cox)
 
-q3.cox.a <- coxph(q2.surv.object ~ q2.data$grp + q2.data$age)
+q3.cox.a <- coxph(q2.surv.object ~ q2.data$age)
 summary(q3.cox.a)
 
-q3.cox.a.e <- coxph(q2.surv.object ~ q2.data$grp + q2.data$age + q2.data$employment)
+q3.cox.a.e <- coxph(q2.surv.object ~ q2.data$age + q2.data$employment)
 summary(q3.cox.a.e)
 
 #b) Report and interpret the log likleihoods for the 3 models (3 points)    
-str(q2.data)
+q3.nocov.loglik <- q3.cox$loglik
+q3.a.loglik <- q3.cox.a$loglik[2]
+q3.a.e.loglik <- q3.cox.a.e$loglik[2]
 
 #c) Does the addition of age statistically improve the null model? Report the p-value and interpret what it means. (2 points)   
 q3.model.anova <- anova(q3.cox, q3.cox.a)
 q3.model.anova$`P(>|Chi|)`
 
 #d) If employment is included in the model, should age also be included? (2 points).  Hint; the `logLik` function may be useful.
-q3.cox.e <- coxph(q2.surv.object ~ q2.data$grp + q2.data$employment)
+q3.cox.e <- coxph(q2.surv.object ~ q2.data$employment)
 q3.cox.e
 
+#if simply using the log lik of the +emp model as the threshold, then look at the +age model. We are talking about neste models, so look at the age + emp model 
+logLik(q3.cox.e)
+
+logLik(q3.cox.a.e)
+
+#Some sort of chi sqr test on these?
+
+logLik(q3.cox.a)
+
+#the age model gives a loglik closer to zero, ie: bigger, which means that if we are happy with emp on it's own being added, then we are happy with age on it's own being added. Obviously if we have an emp model and add age, that extra parameter automatically lowers the loglik
+
+
+#just messing around here. This stuff gets used in next section
 #number of parameters is all the coeffecients, in this case, intercept, group, and 2 additional works (3 work categories). So 1 + 1 + 2 = 4. Hold up! No intercept! So take 1 off of that shit. 1 + 2 = 3
 AIC.e <- 2*3 - 2 *logLik(q3.cox.e)
 AIC.e
@@ -246,32 +260,27 @@ AIC.e
 AIC.a.e <- 2*4 - 2 * logLik(q3.cox.a.e)
 AIC.a.e
 
-# AIC.a.e is smaller than AIC.e, so it is better. 
 
-#if simply using the log lik of the +emp model as the threshold, then look at the +age model. 
-logLik(q3.cox.e)
-logLik(q3.cox.a)
-
-#the age model gives a loglik closer to zero, ie: smaller, which means that if we are happy with emp on it's own being added, then we are happy with age on it's own being added. Obviously if we have an emp model and add age, that extra parameter automatically lowers the loglik
-
-#Are we compating the emp model to an emp + age model? Or just an age model? 
 ```
 
 <div id="body">
 **Type your answer here:** 
 
-a)Created them
+a)Summary of 3 models above. Created with age as a continuous variable in order to maximize data usage.
 
-b)Model 1: The likelihood of relapse using patch-only is 1.83 times higher (95% CI of 1.20, 2.80) than when using the triple-therapy combination. 
+b)Model 1: `r q3.nocov.loglik`
 
-Model 2: After adjusting for age, the likelihood of relapse using patch-only is 1.75 times higher (95% CI of 1.14, 2.67) than when using the triple-therapy combination. After adjusting for treatment type, the likelihood of relapse is 0.02 lower (95% CI 0.00, 0.04) for every year increase in a person's age. 
+Model 2: `r q3.a.loglik`
 
-Model 3: After adjusting for age and employment, the likelihood of relapse using patch-only is 1.84 times higher (95% CI of 1.20, 2.82) than when using the triple-therapy combination. After adjusting for treatment type and emloyment, the likelihood of relapse is 0.03 lower (95% CI 0.01, 0.05) for every year increase in a person's age. After adjusting for age and treatment type, the likelihood of relapse for "other" employment is 2.02 times higher (95% CI of 1.20, 3.43) than full-time employment and the likelihood of relapse for part-time employment is 1.92 times higher (95% CI of 1.01, 3.65) than full-time employment.
+Model 3: `r q3.a.e.loglik`
 
-c)The anova comparing the models gives a p value of 0.016. This means that there is a significant difference between the models. 
-d)Age should be included in the model. The AIC for the group + employment + age model is smaller than for the group + employment model. 
+There is no meaningful interpretation of the log-likelihoods on their own, but they can be used to compare models. They are related to the sum squares. Of the three models, Model 3 has the largest log likelihood and thus is relatively the best fit of the three models. 
 
-Age should be included in the model. If we are happy with the log likelihood of the model with employment included, then we must also be happy with the model with age included. 
+c)The anova comparing the models gives a p value of 0.008. This means that there is a significant difference between the models. 
+
+d)Age should be included in the model. The AIC for the employment + age model is smaller than for the employment model. 
+
+Age should be included in the model. If we are happy with using the log likelihood of the model with employment included, then we must also be happy with the model with age included since it is greater than the model with just employment. 
 
 </div>
 
@@ -290,21 +299,22 @@ b) Discuss what the AIC criteria is, and its interpration in choosing the best o
 #a) Calculate the AIC criteria ($\textit{AIC} = -2 * \ell(\widehat{\beta}) + 2 * k$) for each model (5 points)  
 
 #number of parameters is all the coeffecients, in this case, no intercept, group, and 2 additional works (3 work categories). So 1 + 2 = 3
-AIC.e <- 2*3 - 2 *logLik(q3.cox.e)
+AIC.e <- 2*2 - 2 *logLik(q3.cox.e)
 AIC.e
 
 #no intercept, group, and age
-AIC.a <- 2*2 - 2 * logLik(q3.cox.a)
+AIC.a <- 2*1 - 2 * logLik(q3.cox.a)
 AIC.a
 
-#added age as a parameter, so 3 + 1 = 4
-AIC.a.e <- 2*4 - 2 * logLik(q3.cox.a.e)
+#added age as a parameter, so 2 + 1 = 3
+AIC.a.e <- 2*3 - 2 * logLik(q3.cox.a.e)
 AIC.a.e
 #confirm that it's the same. 
 AIC(q3.cox.a.e, k = 2)
 
-AIC.uni <- 2*1 - 2* logLik(q3.cox)
+AIC.uni <- 2*0 - 2* logLik(q3.cox)
 AIC.uni
+AIC(q3.cox, k = 2)
 
 #b) Discuss what the AIC criteria is, and its interpration in choosing the best of these 3 models (i.e. which model is best by AIC criteria and why?) (5 points)
 
@@ -316,7 +326,7 @@ AIC.uni
 **Type your answer here:** 
 
 
-b) It is Akaikies Information Criterion that is meant to communicate the goodness of fit of a model. It has two important terms, one that is a measure of fit based on the sum squares of errors of prediction (SSE, aka residual sum of squares) and another that adds a penalty for each parameter added to the model. The penalty is meant to prevent over fitting. When comparing models, the model with the smallest AIC should be considered the best, though some argue that the AIC penalty for additional parameters is not strong enough and blindly chasing the lowest AIC will not prevent overfitting. In comparing the three models based on the AIC criteria, the model with treatment group, age, and employment has the lowest AIC and is the best according to the AIC 
+b) It is Akaikies Information Criterion that is meant to communicate the goodness of fit of a model. It has two important terms, one that is a measure of fit based on the sum squares of errors of prediction (SSE, aka residual sum of squares) and another that adds a penalty for each parameter added to the model. The penalty is meant to prevent over fitting. When comparing models, the model with the smallest AIC should be considered the best, though some argue that the AIC penalty for additional parameters is not strong enough and blindly chasing the lowest AIC will not prevent overfitting. In comparing the three models based on the AIC criteria, the model with age and employment has the lowest AIC and is the best according to the AIC. AIC for no covariates: `r AIC.uni`, AIC for age: `r AIC.a`, AIC for employment `r AIC.e`, and AIC for age and employment: `r AIC.a.e`. 
 
 </div>
 
@@ -330,13 +340,36 @@ b) What are the odds ratios for the age variable categories, based on the final 
 
 ```{r}
 # insert R code here
+?step
+head(q2.data)
+str(q2.data)
 
+q5.full.model <- coxph(data = q2.data, formula = q2.surv.object ~ . - id - ttr - relapse - ageGroup2 - ageGroup4 - ageReg)
+summary(q5.full.model)
+
+q5.step <- step(q5.full.model, direction = "backward")
+summary(q5.step)
+
+#repeat with categorical age 
+q5.full.model.agecat <- coxph(data = q2.data, formula = q2.surv.object ~ . - id - ttr - relapse - ageGroup2 - ageGroup4 - age)
+summary(q5.full.model.agecat)
+
+
+q5.step.agecat <- step(q5.full.model.agecat, direction = "backward")
+summary(q5.step.agecat)
 
 ```
 
 
 <div id="body">
 **Type your answer here:** 
+
+a)The most parsimonious model includes the treatment group, age (continuous), and employment variables. We also repeated the process using the dichotomous age categories and came to the same result.
+
+b)If age is continuous, the hazard ratio for the age variable is 0.97 (95% CI of 0.95, 0.99). This means that for increase in age, there is an associated longer time to relapse, every increase in age by 1 year has a 3% reduced risk of relapse. The upper bound of the 95% CI suggests this reduction in risk may be as little as 1%, but that is per year of age, so a 10 year age difference could mean an important difference in risk. 
+
+If age is dichotomous, the hazard ratio for the age variable is 2.41 (95% CI of 1.51, 3.86). This means that being under the age of 50 is associated with a shorter time to relapse, a 141% increased risk of relapse. Friggen kids these days. 
+
 </div>
 
 ## Question 6 - 5 points
@@ -354,16 +387,20 @@ Based on this information, can we establish that the relationship has departed f
 
 ```{r}
 # insert R code here
-modelS4.coxph <- coxph(Surv(q2.data$ttr, q2.data$relapse) ~ q2.data$grp + q2.data$employment + pspline(q2.data$age, df=4) )
+modelS4.coxph <- coxph(Surv(ttr, relapse) ~ grp + employment + pspline(age, df=4), data = q2.data)
 modelS4.coxph
 
 #not working for me
 termplot(modelS4.coxph, se=T, terms=3, ylabs="Log hazard")
 
+hist(q2.data$age)
+
 ```
 
 <div id="body">
 **Type your answer here:** 
+
+After age 60 the confidence intervals get really large. Under age 30 also seems to have fairly large 95% CI. If we look at the histogram of age, we see that the age data looks fairly normal, but there is a long right tail. We have a few data points above age 70 that could be influencing the stability of our estimates on either end of out regression. Superficially to log(hazard) vs age plot looks non-linear, but I'm skeptical. I think it is linear with some outliers above age 70 that are ripping the 95% CI wide open at either end. Notice how you can trace a linear line within the 95% CI.
 
 </div>
 
@@ -376,6 +413,41 @@ Model goodness-of-fit can also be assessed in survival analysis, in an analogous
 
 ```{r}
 # insert R code here
+
+
+
+?residuals.coxph
+
+q7.resids <- residuals(modelS4.coxph, type = "martingale")
+
+#attach(q2.data)
+
+head(q2.data)
+plot(q7.resids ~ age)
+smoothSEcurve(q7.resids ~ age)
+
+
+smoothSEcurve <- function(yy, xx) {
+  # use after a call to "plot"   
+  # fit a lowess curve and 95% confidence interval curve
+  
+  # make list of x values
+  xx.list <- min(xx) + ((0:100)/100)*(max(xx) - min(xx)) 
+
+  # Then fit loess function through the points (xx, yy)
+  #   at the listed values
+  yy.xx <- predict(loess(yy ~ xx), se=T, 
+     newdata=data.frame(xx=xx.list))
+
+  lines(yy.xx$fit ~ xx.list, lwd=2)
+  lines(yy.xx$fit - 
+       qt(0.975, yy.xx$df)*yy.xx$se.fit ~ xx.list, lty=2)
+  lines(yy.xx$fit + 
+       qt(0.975, yy.xx$df)*yy.xx$se.fit ~ xx.list, lty=2)
+  }
+
+
+
 ```
 
 
@@ -395,10 +467,28 @@ b) Discuss whether this graph suggests that any values are exerting an undue inf
 
 ```{r}
 # insert R code here
+?dfbeta()
+
+q8.resid <- residuals(modelS4.coxph, type = "dfbeta")
+
+num.obs <- length(ttr)
+index.obs <- 1:num.obs
+plot(q8.resid[,4] ~index.obs, type="h", xlab="Observations", ylab="Change in coefficients")
+abline(h=0)
+
+q8.resid[80:90, 4]
+
+which(q8.resid[,4] == min(q8.resid[,4]))
+
+#you know how sometimes in regression modelling, you fit the model to your data, but what if you have some outliers, how much do they influence it. Play around with the rows, removing each one and seeing what happens to betas. 
 ```
 
 <div id="body">
 **Type your answer here:** 
+
+a)Plotted above.
+
+b)Most of the values don't have a huge influence on the model, however there is one value whose influence on the model coefficients is nearly 3 times greater than the next "biggest influencer". It's like Huda Kattan decided to be in this model instead of instagram. It's the 87th row of the data frame.
 
 </div>
 
@@ -414,6 +504,14 @@ c) Interpret the graph as to whether you think the proportional hazards assumpti
 
 ```{r}
 # insert R code here
+
+q9.data <- pancreatic2
+
+head(q9.data)
+str(q9.data)
+
+
+
 ```
 
 
