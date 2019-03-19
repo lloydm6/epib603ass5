@@ -510,6 +510,32 @@ q9.data <- pancreatic2
 head(q9.data)
 str(q9.data)
 
+q9.data$pfsmo <- q9.data$pfs/30
+
+q9.surv.obj <- Surv(q9.data$pfsmo)
+
+coxph(q9.surv.obj ~ q9.data$stage)
+
+plot(survfit(q9.surv.obj ~ q9.data$stage), col = c("blue", "red"), xlab = "Survival Time (months)")
+legend(x = "topright", inset = c(0.05, 0.05), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
+
+#exlporing, build it in ggplot
+survfit <- survfit(q9.surv.obj ~ q9.data$stage)
+log.time <- log(survfit$time)
+log.log.prob <- log(-log(survfit$surv))
+type <- c(rep("LA", 8), rep("M", 30))
+log.df <- data.frame(log.log.prob, log.time, type)
+
+#first 8 are LA, rest are M
+library(ggplot2)
+ggplot(data = log.df, aes(x = log.time, y = log.log.prob, col = type)) + geom_step()
+
+plot(survfit(q9.surv.obj ~ q9.data$stage), col = c("blue", "red"), xlab = "Survival Time (months)", fun = "cloglog")
+legend(x = "topright", inset = c(0.05, 0.75), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
+
+
+q1.curvetest <- survdiff(q1.surv.object ~ q1.data$stage)
+q1.curvetest$chisq
 
 
 ```

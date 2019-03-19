@@ -10,3 +10,5 @@ done 3rd question.....semi WAG on the AIC
 battling
 
 liiiiiike sorta good enough done until question 9
+
+reproduced q9 in ggplot
