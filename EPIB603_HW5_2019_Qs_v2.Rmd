@@ -418,14 +418,19 @@ Model goodness-of-fit can also be assessed in survival analysis, in an analogous
 
 ?residuals.coxph
 
-q7.resids <- residuals(modelS4.coxph, type = "martingale")
+modelS4.coxph
 
 #attach(q2.data)
 
 head(q2.data)
-plot(q7.resids ~ age)
-smoothSEcurve(q7.resids ~ age)
-
+q7.resids <- residuals(modelS4.coxph, type = "martingale")
+par(mfrow=c(2, 2))
+plot(q7.resids ~ q2.data$age)
+smoothSEcurve(q7.resids, q2.data$age)
+plot(q7.resids ~ log(q2.data$age))
+smoothSEcurve(q7.resids, log(q2.data$age))
+plot(q7.resids ~ q2.data$employment)
+plot(q7.resids ~ q2.data$grp)
 
 smoothSEcurve <- function(yy, xx) {
   # use after a call to "plot"   
@@ -453,6 +458,8 @@ smoothSEcurve <- function(yy, xx) {
 
 <div id="body">
 **Type your answer here:** 
+
+The plots mean things
 
 </div>
 
@@ -514,7 +521,7 @@ q9.data$pfsmo <- q9.data$pfs/30
 
 q9.surv.obj <- Surv(q9.data$pfsmo)
 
-coxph(q9.surv.obj ~ q9.data$stage)
+q9.cox <- coxph(q9.surv.obj ~ q9.data$stage)
 
 plot(survfit(q9.surv.obj ~ q9.data$stage), col = c("blue", "red"), xlab = "Survival Time (months)")
 legend(x = "topright", inset = c(0.05, 0.05), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
@@ -554,6 +561,12 @@ q1.curvetest$chisq
 <div id="body">
 **Type your answer here:** 
 
+a)
+
+b)
+
+c)I think he assumption is violated. We have lines crossing. The hazards are not proportional. 
+
 </div>
 
 ## Question 10  - 6 points
@@ -567,6 +580,9 @@ b) What is the associated p-value and what is your interpretation of the proport
 
 ```{r}
 # insert R code here
+q.10.z <- cox.zph(q9.cox)
+residuals(q9.cox)
+
 ```
 
 
