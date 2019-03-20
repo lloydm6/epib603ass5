@@ -14,3 +14,5 @@ liiiiiike sorta good enough done until question 9
 reproduced q9 in ggplot 
 
 q7 plots done, missing interpretation
+
+nearly done
