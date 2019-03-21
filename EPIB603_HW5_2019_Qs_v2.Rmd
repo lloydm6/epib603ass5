@@ -46,7 +46,8 @@ d) Report the p-value to 3 decimal places. How do you interpret this? (2 points)
 library(asaur)
 library(lubridate)
 library(survival)
-
+library(dplyr)
+library(ggplot2)
 help("pancreatic")
 
 q1.data <- pancreatic
@@ -149,14 +150,14 @@ q2.b.pval <- pchisq(q2.curvetest$chisq, df = 1, lower.tail = F)
 #c) Next, stratify age by those 49 and younger and those 50 and older. How many patients are aged 50 and over? (3 points)
 
 #per group? No need to, there is a variable already
-#q2.u50 <- nrow(filter(q2.data, q2.data$age < 50))
-#q2.50ao <- nrow(filter(q2.data, q2.data$age >= 50))
+q2.u50 <- nrow(filter(q2.data, q2.data$age < 50))
+q2.50ao <- nrow(filter(q2.data, q2.data$age >= 50))
 
 nrow(q2.data)
 
-#q2.data$ageReg <- as.factor(ifelse(q2.data$age < 50, "Under50", "50andOver"))
+q2.data$ageReg <- as.factor(ifelse(q2.data$age < 50, "Under50", "50andOver"))
 
-table(q2.data$ageReg, q2.data$grp)
+table(q2.data$ageGroup2, q2.data$grp)
 
 
 #d) Repeat step b), but now include age as a potential confounder. Discuss if the age differences between the groups explain some or all of any observed treatment differences. (2 points)
@@ -176,14 +177,14 @@ q2.d.pval <- pchisq(q2.d.curvetest$chisq, df = 1, lower.tail = F)
 #q2.cox.sum
 
 #or is this just asking for surdiff on the two stratum?
-#q2.data.under50 <- filter(q2.data, ageReg == "Under50")
-#q2.data.under50
-#q2.under50.obj <- Surv(q2.data.under50$ttr, q2.data.under50$relapse)
+q2.data.under50 <- filter(q2.data, ageReg == "Under50")
+q2.data.under50
+q2.under50.obj <- Surv(q2.data.under50$ttr, q2.data.under50$relapse)
 #survdiff(q2.under50.obj ~ q2.data.under50$grp)
 
-#q2.data.50ao <- filter(q2.data, ageReg == "50andOver")
-#q2.data.50ao
-#q2.50ao.obj <- Surv(q2.data.50ao$ttr, q2.data.50ao$relapse)
+q2.data.50ao <- filter(q2.data, ageReg == "50andOver")
+q2.data.50ao
+q2.50ao.obj <- Surv(q2.data.50ao$ttr, q2.data.50ao$relapse)
 #survdiff(q2.50ao.obj ~ q2.data.50ao$grp)
 
 
