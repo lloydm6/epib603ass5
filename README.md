@@ -16,3 +16,5 @@ reproduced q9 in ggplot
 q7 plots done, missing interpretation
 
 nearly done
+
+PERFECT! Except for q8, q9, and q10

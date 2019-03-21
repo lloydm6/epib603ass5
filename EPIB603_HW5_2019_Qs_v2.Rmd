@@ -70,19 +70,21 @@ q1.data$OS <- q1.data$death - q1.data$onstudy
 median.PFS <- median(q1.data$PFS, na.rm = TRUE)
 median.OS <- median(q1.data$OS)
 
+q1.data$SurvMo <- time_length(interval(q1.data$onstudy, if_else(is.na(q1.data$PFS), q1.data$death, q1.data$progression)), unit = "month")
+
+q1.surv.object <- Surv(q1.data$SurvMo)
+
 #c) Next, plot the survival curves according to the stage of the disease and report if there is evidence for a difference between these groups. Plot time axis in months. (4 points)          
 head(q1.data)
 
 library(dplyr)
 q1.data
-q1.data$SurvMo <- time_length(interval(q1.data$onstudy, if_else(is.na(q1.data$PFS), q1.data$death, q1.data$progression)), unit = "month")
-
-q1.surv.object <- Surv(q1.data$SurvMo)
 
 
 #note that survfit() col is assigned in the order of the factors, ie: LA is 1, so that one is blue
-plot(survfit(q1.surv.object ~ q1.data$stage), col = c("blue", "red"), xlab = "Survival Time (months)")
+plot(survfit(q1.surv.object ~ q1.data$stage), col = c("blue", "red"), xlab = "Survival Time (months)", ylab = "Survival Probability")
 legend(x = "topright", inset = c(0.05, 0.05), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
+title(main = "Survival of Pancreatic Cancer by Stage")
 
 q1.curvetest <- survdiff(q1.surv.object ~ q1.data$stage)
 q1.curvetest$chisq
@@ -136,10 +138,8 @@ help("pharmacoSmoking")
 q2.surv.object <- Surv(q2.data$ttr, q2.data$relapse)
 
 #Combination is codded as 1 
-plot(survfit(q2.surv.object ~ q2.data$grp), col = c("blue", "red"), xlab = "Time to Relapse (Days)")
-legend(x = "topright", inset = c(0.05, 0.05), col = c("blue", "red"), lty = c(1, 1), legend = c("Combination", "Patch Only"))
-
-head(q2.data)
+#plot(survfit(q2.surv.object ~ q2.data$grp), col = c("blue", "red"), xlab = "Time to Relapse (Days)")
+#legend(x = "topright", inset = c(0.05, 0.05), col = c("blue", "red"), lty = c(1, 1), legend = c("Combination", "Patch Only"))
 
 q2.curvetest <- survdiff(q2.surv.object ~ q2.data$grp)
 q2.curvetest
@@ -148,23 +148,19 @@ q2.b.pval <- pchisq(q2.curvetest$chisq, df = 1, lower.tail = F)
 
 #c) Next, stratify age by those 49 and younger and those 50 and older. How many patients are aged 50 and over? (3 points)
 
-library(dplyr)
-
-str(q2.data)
-
-#per group?
-q2.u50 <- nrow(filter(q2.data, q2.data$age < 50))
-q2.50ao <- nrow(filter(q2.data, q2.data$age >= 50))
+#per group? No need to, there is a variable already
+#q2.u50 <- nrow(filter(q2.data, q2.data$age < 50))
+#q2.50ao <- nrow(filter(q2.data, q2.data$age >= 50))
 
 nrow(q2.data)
 
-q2.data$ageReg <- as.factor(ifelse(q2.data$age < 50, "Under50", "50andOver"))
+#q2.data$ageReg <- as.factor(ifelse(q2.data$age < 50, "Under50", "50andOver"))
 
 table(q2.data$ageReg, q2.data$grp)
 
 
 #d) Repeat step b), but now include age as a potential confounder. Discuss if the age differences between the groups explain some or all of any observed treatment differences. (2 points)
-q2.d.curvetest <- survdiff(q2.surv.object ~ q2.data$grp + strata(q2.data$ageReg))
+q2.d.curvetest <- survdiff(q2.surv.object ~ q2.data$grp + strata(q2.data$ageGroup2))
 q2.d.curvetest
 
 q2.d.pval <- pchisq(q2.d.curvetest$chisq, df = 1, lower.tail = F)
@@ -223,10 +219,10 @@ d) If employment is included in the model, should age also be included? (2 point
 q3.cox <- coxph(q2.surv.object ~ 1)
 summary(q3.cox)
 
-q3.cox.a <- coxph(q2.surv.object ~ q2.data$age)
+q3.cox.a <- coxph(q2.surv.object ~ q2.data$ageGroup4)
 summary(q3.cox.a)
 
-q3.cox.a.e <- coxph(q2.surv.object ~ q2.data$age + q2.data$employment)
+q3.cox.a.e <- coxph(q2.surv.object ~ q2.data$ageGroup4 + q2.data$employment)
 summary(q3.cox.a.e)
 
 #b) Report and interpret the log likleihoods for the 3 models (3 points)    
@@ -292,8 +288,7 @@ There is no meaningful interpretation of the log-likelihoods on their own, but t
 
 c)The anova comparing the models gives a p value of `r q3.c`. This means that there is a significant difference between the models. The likelihood ratio test gives p value of `r q3.c3`.
 
-d)Age should be included in the model. The inclusion of age in the employment model increases the log likelihood compared to the employment only model ($\chi^2$ test comparing log likelihoods gives a p value of `r q3.chi.evae`, so reject the null hypothesis that they are the same). Comparing the log likelihoods of the age only model to the age and employment model also shows that there is an improvement (p value of `r q3.chi.avae`). We can also just eyeball it and see that the log likelihood of the age and employment model (-379) is larger (less negative) than either the age only (-383) or employment only models (-385). 
-
+d)Age should be included in the model. The inclusion of employent in the ge model increases the log likelihood compared to the age only model ($\chi^2$ test comparing log likelihoods gives a p value of `r q3.chi.avae`, so reject the null hypothesis that they are the same). Comparing the log likelihoods of the employment only model to the age and employment model also shows that there is an improvement (p value of `r q3.chi.evae`). We can also just eyeball it and see that the log likelihood of the age and employment model (-379) is larger (less negative) than either the age only (-383) or employment only models (-385).....but it's like, a good thing to not rely on eyeballin' it and to go the extra mile and get a p value. 
 
 </div>
 
@@ -315,14 +310,14 @@ b) Discuss what the AIC criteria is, and its interpration in choosing the best o
 AIC.e <- round(2*2 - 2 *logLik(q3.cox.e)[1], 2)
 AIC.e
 
-#no intercept, group, and age
-AIC.a <- round(2*1 - 2 * logLik(q3.cox.a)[1], 2)
+#no intercept, just ageGroup4
+AIC.a <- round(2*3 - 2 * logLik(q3.cox.a)[1], 2)
 AIC.a
 
 
 
-#added age as a parameter, so 2 + 1 = 3
-AIC.a.e <- round(2*3 - 2 * logLik(q3.cox.a.e)[1], 2)
+#employment and ageGroup4 as a parameter, so 2 + 3 = 3
+AIC.a.e <- round(2*5 - 2 * logLik(q3.cox.a.e)[1], 2)
 AIC.a.e
 #confirm that it's the same. 
 AIC(q3.cox.a.e, k = 2)
@@ -339,9 +334,9 @@ AIC(q3.cox, k = 2)
 
 <div id="body">
 **Type your answer here:** 
-a) The AIC of the model without covariates is `r AIC.uni`. The AIC of the age only model is `r AIC.a`. The AIC of the employment only model is `r AIC.e`. The AIC of the age + employment model is `r AIC.a.e`. Note age as a continuous variable was used. 
+a) The AIC of the model without covariates is `r AIC.uni`. The AIC of the age only model is `r AIC.a`. The AIC of the employment only model is `r AIC.e`. The AIC of the age + employment model is `r AIC.a.e`. Note age as a categorical variable was used (4 categories). 
 
-b) It is Akaikies Information Criterion that is meant to communicate the goodness of fit of a model. It has two important terms, one that is a measure of fit based on the sum squares of errors of prediction (SSE, aka residual sum of squares) and another that adds a penalty for each parameter added to the model. The penalty is meant to prevent over fitting. When comparing models, the model with the smallest AIC should be considered the best, though some argue that the AIC penalty for additional parameters is not strong enough and blindly chasing the lowest AIC will not prevent overfitting. For this question, we have a lot of observations compared to the number of covariates we are looking at, so I'm not too worried about over fitting at the mo.
+b) It is Akaikies Information Criterion that is meant to communicate the goodness of fit of a model. It has two important terms, one that is a measure of fit based on the sum squares of errors of prediction (SSE, aka residual sum of squares) and another that adds a penalty for each parameter added to the model. The penalty is meant to prevent over fitting. When comparing models, the model with the smallest AIC should be considered the best, though some argue that the AIC penalty for additional parameters is not strong enough and blindly chasing the lowest AIC will not always prevent overfitting (accding to Prof Lawrence). For this question, we have a lot of observations and events compared to the number of covariates we are looking at, so I'm not too worried about over fitting at the mo.
 
 In comparing the three models based on the AIC criteria, the model with *age and employment* has the *lowest* AIC and is the *best* according to the AIC. AIC for no covariates: `r AIC.uni`, AIC for age: `r AIC.a`, AIC for employment `r AIC.e`, and AIC for age and employment: `r AIC.a.e`. Age as a continous variable was used. 
 
@@ -389,14 +384,9 @@ summary(q5.step.agecat)
 <div id="body">
 **Type your answer here:** 
 
-a)The most parsimonious model includes the treatment group, age (continuous), and employment variables. We also repeated the process using the dichotomous age categories and came to the same result.
+a)The most parsimonious model includes the treatment group, age (categorical with 4 cats), and employment variables. We also repeated the process using the dichotomous and continuous age and came to the same model.
 
-b)If age has 4 categories, the hazard ratio for the 35-49 age variable is 0.89 (95% CI of 0.48, 1.68) and suggests 35-49 year olds have a 11% lower risk of relapse compared to 21-34 year olds, though the HR 95% CI crosses the null in a big way and is thus inconclusive. The hazard ratio for the 50-64 age variable is 0.36 (95% CI of 0.18, 0.73) and suggests 50-64 year olds have a 64% lower risk of relapse compared to 21-34 year olds with the 95%CI being well below the null. The hazard ratio for the 65+ age variable is 0.49 (95% CI of 0.18, 1.32) and suggests 65+ year olds have a 51% lower risk of relapse compared to 21-34 year olds, though the HR crosses the null and is thus inconclusive, but may be interesting because a large part of the 95% CI is below 1. These hazard ratios are all in comparison to the reference category of 21-34 years old. 
-
-If age is continuous, the hazard ratio for the age variable is 0.97 (95% CI of 0.95, 0.99). This means that for increase in age, there is an associated longer time to relapse, every increase in age by 1 year has a 3% reduced risk of relapse. The upper bound of the 95% CI suggests this reduction in risk may be as little as 1%, but that is per year of age, so a 10 year age difference could mean an important difference in risk. 
-
-If age is dichotomous, the hazard ratio for the under 50 age variable is 2.41 (95% CI of 1.51, 3.86). This means that being under the age of 50 is associated with a shorter time to relapse, a 141% increased risk of relapse. Friggen kids these days. 
-
+b)If age has 4 categories, the hazard ratio for the 35-49 age variable is 0.89 (95% CI of 0.48, 1.68) and suggests 35-49 year olds have a 11% lower hazard of relapse compared to 21-34 year olds, but the HR 95% CI is very wide and crosses the null in a big way and is thus inconclusive. The hazard ratio for the 50-64 age variable is 0.36 (95% CI of 0.18, 0.73) and suggests 50-64 year olds have a 64% lower hazard of relapse compared to 21-34 year olds with the 95%CI being well below the null. The hazard ratio for the 65+ age variable is 0.49 (95% CI of 0.18, 1.32) and suggests 65+ year olds have a 51% lower hazard of relapse compared to 21-34 year olds, though the HR crosses the null and is thus inconclusive, but may be interesting because a large part of the 95% CI is below 1. These hazard ratios are all in comparison to the reference category of 21-34 years old. 
 
 </div>
 
@@ -421,14 +411,13 @@ modelS4.coxph
 #not working for me
 termplot(modelS4.coxph, se=T, terms=3, ylabs="Log hazard")
 
-hist(q2.data$age)
-
+hist(q2.data$age, main = "Histogram of Age", xlab = "Age")
 ```
 
 <div id="body">
 **Type your answer here:** 
 
-After age 60 the confidence intervals get really large. Under age 30 also seems to have fairly large 95% CI. If we look at the histogram of age, we see that the age data looks fairly normal, but there is a long right tail. We have a few data points above age 70 that could be influencing the stability of our estimates on either end of out regression. At first glance, the log(hazard) vs age plot looks non-linear, but the large CIs at either end don't rule out linearity. Notice how you can trace a nice, straight, linear line within the 95% CI. We cannot establish that the relationship has departed from linearity. 
+After age 60 the 95% confidence intervals get really large. Under age 30 also seems to have fairly large 95% CI. If we look at the histogram of age, we see that the age data looks fairly normal, but there is a bit of a long right tail. We have a few data points above age 70 that could be influencing the stability of our estimates on either end of out regression. At first glance, the log(hazard) vs age plot looks non-linear, but the large CIs at either end don't rule out linearity. Notice how you can trace a nice, straight, downward, linear line within the 95% CI. We cannot establish that the relationship has departed from linearity. 
 
 </div>
 
@@ -461,21 +450,23 @@ smoothSEcurve <- function(yy, xx) {
        qt(0.975, yy.xx$df)*yy.xx$se.fit ~ xx.list, lty=2)
   }
 
-?residuals.coxph
 
-modelS4.coxph
-
-#attach(q2.data)
-
-head(q2.data)
 q7.resids <- residuals(modelS4.coxph, type = "martingale")
-par(mfrow=c(1, 1))
+par(mfrow=c(2, 2))
 plot(q7.resids ~ q2.data$age)
 smoothSEcurve(q7.resids, q2.data$age)
+abline(a = 0, b = 0, col = "blue")
 plot(q7.resids ~ log(q2.data$age))
 smoothSEcurve(q7.resids, log(q2.data$age))
+abline(a = 0, b = 0, col = "blue")
 plot(q7.resids ~ q2.data$employment)
+abline(a = 0, b = 0, col = "blue")
 plot(q7.resids ~ q2.data$grp)
+abline(a = 0, b = 0, col = "blue")
+par(mfrow=c(1, 1))
+
+
+
 
 ```
 
@@ -483,7 +474,7 @@ plot(q7.resids ~ q2.data$grp)
 <div id="body">
 **Type your answer here:** 
 
-The plots mean things
+Horizontal blue lines were added to the plots to help with eyeballin' the graphs. We took a good loooooong look at these here graphs and we're happy with them. The residuals look evenly distributed accross each of the covariates: the 95% CI smooth lines have a nice, horizontal area accross the age range and the boxplots are fairly even and centered on zero. Could they be more better? Sure, but I'm not going to lose sleep on it or waste one of my three wishes flattening them out. Hear ye hear ye, we declare these to be linear enough!
 
 </div>
 
