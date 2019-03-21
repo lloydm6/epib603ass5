@@ -48,6 +48,7 @@ library(lubridate)
 library(survival)
 library(dplyr)
 library(ggplot2)
+library(knitr)
 help("pancreatic")
 
 q1.data <- pancreatic
@@ -63,24 +64,19 @@ q1.data$onstudy <- as_date(mdy(q1.data$onstudy))
 q1.data$progression <- as_date(mdy(q1.data$progression))
 q1.data$death <- as_date(mdy(q1.data$death))
 
-head(q1.data)
-
 q1.data$PFS <- q1.data$progression - q1.data$onstudy
 q1.data$OS <- q1.data$death - q1.data$onstudy
 
 median.PFS <- median(q1.data$PFS, na.rm = TRUE)
 median.OS <- median(q1.data$OS)
+median.PFS
+median.OS
 
 q1.data$SurvMo <- time_length(interval(q1.data$onstudy, if_else(is.na(q1.data$PFS), q1.data$death, q1.data$progression)), unit = "month")
 
 q1.surv.object <- Surv(q1.data$SurvMo)
 
 #c) Next, plot the survival curves according to the stage of the disease and report if there is evidence for a difference between these groups. Plot time axis in months. (4 points)          
-head(q1.data)
-
-library(dplyr)
-q1.data
-
 
 #note that survfit() col is assigned in the order of the factors, ie: LA is 1, so that one is blue
 plot(survfit(q1.surv.object ~ q1.data$stage), col = c("blue", "red"), xlab = "Survival Time (months)", ylab = "Survival Probability")
@@ -89,7 +85,6 @@ title(main = "Survival of Pancreatic Cancer by Stage")
 
 q1.curvetest <- survdiff(q1.surv.object ~ q1.data$stage)
 q1.curvetest$chisq
-
 
 #d) Report the p-value to 3 decimal places. How do you interpret this? (2 points)
 q1.pval <- format(round(pchisq(q1.curvetest$chisq, 1, lower.tail = FALSE), 3), nsmall = 3)
@@ -145,48 +140,26 @@ q2.surv.object <- Surv(q2.data$ttr, q2.data$relapse)
 q2.curvetest <- survdiff(q2.surv.object ~ q2.data$grp)
 q2.curvetest
 q2.b.pval <- pchisq(q2.curvetest$chisq, df = 1, lower.tail = F)
-
+q2.b.pval
 
 #c) Next, stratify age by those 49 and younger and those 50 and older. How many patients are aged 50 and over? (3 points)
 
 #per group? No need to, there is a variable already
 q2.u50 <- nrow(filter(q2.data, q2.data$age < 50))
 q2.50ao <- nrow(filter(q2.data, q2.data$age >= 50))
+q2.50ao
+q2.u50
 
 nrow(q2.data)
 
-q2.data$ageReg <- as.factor(ifelse(q2.data$age < 50, "Under50", "50andOver"))
-
-table(q2.data$ageGroup2, q2.data$grp)
-
+kable(table(q2.data$ageGroup2, q2.data$grp), caption = "Treament Stratified by Age")
 
 #d) Repeat step b), but now include age as a potential confounder. Discuss if the age differences between the groups explain some or all of any observed treatment differences. (2 points)
 q2.d.curvetest <- survdiff(q2.surv.object ~ q2.data$grp + strata(q2.data$ageGroup2))
 q2.d.curvetest
 
 q2.d.pval <- pchisq(q2.d.curvetest$chisq, df = 1, lower.tail = F)
-
-#do we wat age as a dichotomous variable that we did in c? Or as a continuous varaible? Are continuous variables allowed?
-#q2.cox <- coxph(q2.surv.object ~ q2.data$grp + q2.data$age)
-#coxph(q2.surv.object ~ q2.data$grp)
-
-#q2.cox.sum <- summary(q2.cox)
-#patch.HR <- round(q2.cox.sum$coefficients[1,2], 2)
-#age.HR <- round(q2.cox.sum$coefficients[2,2], 2)
-
-#q2.cox.sum
-
-#or is this just asking for surdiff on the two stratum?
-q2.data.under50 <- filter(q2.data, ageReg == "Under50")
-q2.data.under50
-q2.under50.obj <- Surv(q2.data.under50$ttr, q2.data.under50$relapse)
-#survdiff(q2.under50.obj ~ q2.data.under50$grp)
-
-q2.data.50ao <- filter(q2.data, ageReg == "50andOver")
-q2.data.50ao
-q2.50ao.obj <- Surv(q2.data.50ao$ttr, q2.data.50ao$relapse)
-#survdiff(q2.50ao.obj ~ q2.data.50ao$grp)
-
+q2.d.pval
 
 ```
 
@@ -233,15 +206,18 @@ q3.nocov.loglik <- q3.cox$loglik
 q3.a.loglik <- q3.cox.a$loglik[2]
 q3.a.e.loglik <- q3.cox.a.e$loglik[2]
 
-
+q3.nocov.loglik
+q3.a.loglik
+q3.a.e.loglik
 
 #c) Does the addition of age statistically improve the null model? Report the p-value and interpret what it means. (2 points)   
 q3.model.anova <- anova(q3.cox, q3.cox.a)
 q3.c <- round(q3.model.anova$`P(>|Chi|)`[2], 4)
 q3.c2 <- summary(q3.cox.a)
 q3.c3 <- round(q3.c2$logtest[3], 4)
-
-
+q3.c
+q3.c2
+q3.c3 
 
 #d) If employment is included in the model, should age also be included? (2 points).  Hint; the `logLik` function may be useful.
 q3.cox.e <- coxph(q2.surv.object ~ q2.data$employment)
@@ -249,28 +225,15 @@ q3.cox.e
 
 #if simply using the log lik of the +emp model as the threshold, then look at the +age model. We are talking about neste models, so look at the age + emp model 
 logLik(q3.cox.e)
-logLik(q3.cox.a.e)
 logLik(q3.cox.a)
+logLik(q3.cox.a.e)
 
-#
-q3.chi.avae <- round(1 - pchisq(as.numeric(-2*(logLik(q3.cox.a) - logLik(q3.cox.a.e))), df = 2), 3)
+#look at it both ways
+q3.chi.avae <- round(1 - pchisq(as.numeric(2*(logLik(q3.cox.a.e) - logLik(q3.cox.a))), df = 2), 3)
+q3.chi.avae
 
-q3.chi.evae <- round(1 - pchisq(as.numeric(-2*(logLik(q3.cox.e) - logLik(q3.cox.a.e))), df = 1), 5)
-
-
-
-#the age model gives a loglik closer to zero, ie: bigger, which means that if we are happy with emp on it's own being added, then we are happy with age on it's own being added. Obviously if we have an emp model and add age, that extra parameter automatically lowers the loglik
-
-
-#just messing around here. This stuff gets used in next section
-#number of parameters is all the coeffecients, in this case, intercept, group, and 2 additional works (3 work categories). So 1 + 1 + 2 = 4. Hold up! No intercept! So take 1 off of that shit. 1 + 2 = 3
-AIC.e <- 2*3 - 2 *logLik(q3.cox.e)
-AIC.e
-
-#added age as a parameter, so 3 + 1 = 4
-AIC.a.e <- 2*4 - 2 * logLik(q3.cox.a.e)
-AIC.a.e
-
+q3.chi.evae <- round(1 - pchisq(as.numeric(2*(logLik(q3.cox.a.e) - logLik(q3.cox.e))), df = 1), 5)
+q3.chi.evae
 
 ```
 
@@ -337,7 +300,7 @@ AIC(q3.cox, k = 2)
 **Type your answer here:** 
 a) The AIC of the model without covariates is `r AIC.uni`. The AIC of the age only model is `r AIC.a`. The AIC of the employment only model is `r AIC.e`. The AIC of the age + employment model is `r AIC.a.e`. Note age as a categorical variable was used (4 categories). 
 
-b) It is Akaikies Information Criterion that is meant to communicate the goodness of fit of a model. It has two important terms, one that is a measure of fit based on the sum squares of errors of prediction (SSE, aka residual sum of squares) and another that adds a penalty for each parameter added to the model. The penalty is meant to prevent over fitting. When comparing models, the model with the smallest AIC should be considered the best, though some argue that the AIC penalty for additional parameters is not strong enough and blindly chasing the lowest AIC will not always prevent overfitting (accding to Prof Lawrence). For this question, we have a lot of observations and events compared to the number of covariates we are looking at, so I'm not too worried about over fitting at the mo.
+b)It is Akaikies Information Criterion that is meant to communicate the goodness of fit of a model. It has two important terms, one that is a measure of fit based on the sum squares of errors of prediction (SSE, aka residual sum of squares) and another that adds a penalty for each parameter added to the model. The penalty is meant to prevent over fitting. When comparing models, the model with the smallest AIC should be considered the best, though some argue that the AIC penalty for additional parameters is not strong enough and blindly chasing the lowest AIC will not always prevent overfitting (accding to Prof Lawrence). For this question, we have a lot of observations and events compared to the number of covariates we are looking at, so I'm not too worried about over fitting at the mo.
 
 In comparing the three models based on the AIC criteria, the model with *age and employment* has the *lowest* AIC and is the *best* according to the AIC. AIC for no covariates: `r AIC.uni`, AIC for age: `r AIC.a`, AIC for employment `r AIC.e`, and AIC for age and employment: `r AIC.a.e`. Age as a continous variable was used. 
 
@@ -357,14 +320,14 @@ b) What are the odds ratios for the age variable categories, based on the final 
 head(q2.data)
 str(q2.data)
 
-q5.full.model <- coxph(data = q2.data, formula = q2.surv.object ~ . - id - ttr - relapse - ageGroup2 - ageGroup4 - ageReg)
+q5.full.model <- coxph(data = q2.data, formula = q2.surv.object ~ . - id - ttr - relapse - ageGroup2 - ageGroup4)
 summary(q5.full.model)
 
 q5.step <- step(q5.full.model, direction = "backward")
 summary(q5.step)
 
 #repeat with dichotomous age 
-q5.full.model.agedic <- coxph(data = q2.data, formula = q2.surv.object ~ . - id - ttr - relapse - ageGroup2 - ageGroup4 - age)
+q5.full.model.agedic <- coxph(data = q2.data, formula = q2.surv.object ~ . - id - ttr - relapse - ageGroup4 - age)
 summary(q5.full.model.agedic)
 
 
@@ -372,7 +335,7 @@ q5.step.agedic <- step(q5.full.model.agedic, direction = "backward")
 summary(q5.step.agedic)
 
 #repeat with 4 cat age
-q5.full.model.agecat <- coxph(data = q2.data, formula = q2.surv.object ~ . - id - ttr - relapse - ageGroup2 - age - ageReg)
+q5.full.model.agecat <- coxph(data = q2.data, formula = q2.surv.object ~ . - id - ttr - relapse - ageGroup2 - age)
 summary(q5.full.model.agecat)
 
 
@@ -454,15 +417,15 @@ smoothSEcurve <- function(yy, xx) {
 
 q7.resids <- residuals(modelS4.coxph, type = "martingale")
 par(mfrow=c(2, 2))
-plot(q7.resids ~ q2.data$age)
+plot(q7.resids ~ q2.data$age, xlab="Age", ylab="Residuals", main = "Martigale Residuals vs Age")
 smoothSEcurve(q7.resids, q2.data$age)
 abline(a = 0, b = 0, col = "blue")
-plot(q7.resids ~ log(q2.data$age))
+plot(q7.resids ~ log(q2.data$age), xlab="log(Age)", ylab="Residuals", main = "Martigale Residuals vs log(Age)")
 smoothSEcurve(q7.resids, log(q2.data$age))
 abline(a = 0, b = 0, col = "blue")
-plot(q7.resids ~ q2.data$employment)
+plot(q7.resids ~ q2.data$employment, xlab="Employment", ylab="Residuals", main = "Martigale Residuals vs Employment")
 abline(a = 0, b = 0, col = "blue")
-plot(q7.resids ~ q2.data$grp)
+plot(q7.resids ~ q2.data$grp, xlab="Treatment", ylab="Residuals", main = "Martigale Residuals vs Treatment")
 abline(a = 0, b = 0, col = "blue")
 par(mfrow=c(1, 1))
 
@@ -496,6 +459,7 @@ q8.resid <- residuals(modelS4.coxph, type = "dfbeta")
 
 num.obs <- length(q2.data$ttr)
 index.obs <- 1:num.obs
+par(mfrow = c(1, 1)) 
 plot(q8.resid[,4] ~index.obs, type="h", xlab="Observations", ylab="Change in coefficients", main = "Change in Age Coefficient with Removal of Observations")
 abline(h=0)
 
@@ -540,9 +504,13 @@ q9.data$pfsmo <- q9.data$pfs/30.5
 q9.surv.obj <- Surv(q9.data$pfsmo)
 
 q9.cox <- coxph(q9.surv.obj ~ strata(q9.data$stage))
+survfit(q9.surv.obj ~ q9.data$stage)
 
+plot(survfit(q9.cox), col = c("blue", "red"), xlab = "Survival Time (months)", ylab = "Survival Probability")
+legend(x = "topright", inset = c(0.05, 0.05), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
+title(main = "Survival of Pancreatic Cancer by Stage", sub = "Just taking a quick look before the logging of logs", col.sub = "red")
 
-#this is how we dooooo iiiiit (Montel Jordan)
+#this is how we do it.....it's thursday niiiiight and I feel alriiiight...the party's here on the southwest siiiiiide
 head(q9.data)
 
 q9.LA.fit <- survfit(Surv(q9.data$pfsmo) ~ q9.data$stage, subset = {q9.data$stage == "LA"})
@@ -575,11 +543,11 @@ ggplot(data = q9.plot.data, aes(x = log.t, y = -comp, col = Stage)) + geom_step(
 <div id="body">
 **Type your answer here:** 
 
-a)
+a)See above
 
-b)
+b)See above. We've seen this kind of plot with the y axis is both directions, so we did both. 
 
-c)The lines are not parrallel so the assumption that the hazards are proportional is violated.  It might have been okay if they were close to parrallel, but they full on cross each other. Just like in ghostbusters, crossing streams is a no-no. This suggests that the baseline hazards do not cancel each other out. Keep in mind we have a pretty small sample size (only 8 LAs!)
+c)The lines are not parrallel so the assumption that the hazards are proportional is violated.  It might have been okay if they were close to parrallel, but they full on cross each other. Just like in ghostbusters, crossing streams is a no-no. This suggests that the baseline hazards do not cancel each other out. Keep in mind we have a pretty small sample size (only 8 LAs!). 
 
 </div>
 
@@ -598,6 +566,7 @@ b) What is the associated p-value and what is your interpretation of the proport
 q10.cox <- coxph(q9.surv.obj ~ q9.data$stage)
 q.10.z <- cox.zph(q10.cox, transform = "km")
 q.10.pval <- round(q.10.z$table[3], 3)
+q.10.pval
 
 library(survminer)
 ggcoxzph(q.10.z)
