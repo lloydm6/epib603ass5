@@ -540,39 +540,6 @@ q9.surv.obj <- Surv(q9.data$pfsmo)
 
 q9.cox <- coxph(q9.surv.obj ~ strata(q9.data$stage))
 
-#KM plot
-plot(survfit(q9.surv.obj ~ q9.data$stage), col = c("blue", "red"), xlab = "Survival Time (months)")
-legend(x = "topright", inset = c(0.05, 0.05), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
-
-#Cox PH plot...i think. 
-plot(survfit(q9.cox), col = c("blue", "red"), xlab = "Survival Time (months)")
-legend(x = "topright", inset = c(0.05, 0.05), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
-
-
-#pull vectors that I want out of survfit, build it in ggplot, for some reason they get ordered...which is nice
-survfit <- survfit(q9.cox)
-log.time <- log(survfit$time)
-log.log.prob <- log(-log(survfit$surv))
-survfit$n
-
-#number at risk, this shows the two stages, for some reason, three of the M have disappeared. Too tired to GAF at the mo
-survfit$n.risk
-survfit$strata
-
-#define type again, they are in order and LA comes first. For some reason 
-type <- c(rep("LA", 8), rep("M", 30))
-log.df <- data.frame(log.log.prob, log.time, type)
-
-#make plot
-library(ggplot2)
-ggplot(data = log.df, aes(x = log.time, y = log.log.prob, col = type)) + geom_step()
-
-#now flip it for reasons that are super clear to me
-ggplot(data = log.df, aes(x = log.time, y = -log.log.prob, col = type)) + geom_step()
-
-plot(survfit(q9.cox), col = c("blue", "red"), xlab = "Survival Time (months)", fun = "cloglog")
-legend(x = "topright", inset = c(0.05, 0.75), col = c("red", "blue"), lty = c(1, 1), legend = c("Mestatic", "Locally Advanced"))
-
 
 #this is how we dooooo iiiiit (Montel Jordan)
 head(q9.data)
